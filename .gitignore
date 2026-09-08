@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+
+# PyCharm
+.idea/
+
+# Generated large signal data
+data/raw_signals/*.npy
+data/raw_signals/*.npz
+
+# Temporary files
+*.log

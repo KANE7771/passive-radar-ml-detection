@@ -1,0 +1,16 @@
+SEED = 42
+
+# Sampling settings
+FS = 10000
+DURATION = 1.0
+
+# Simulated target
+TARGET_DELAY_SAMPLES = 20
+TARGET_DOPPLER_HZ = 50
+
+# Signal amplitudes
+DIRECT_PATH_AMPLITUDE = 1.0
+TARGET_AMPLITUDE = 0.1
+
+# Noise
+NOISE_STD = 0.05

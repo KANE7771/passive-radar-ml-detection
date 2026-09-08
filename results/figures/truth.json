@@ -1,0 +1,6 @@
+{
+    "seed": 42,
+    "delay_samples": 20,
+    "doppler_hz": 50,
+    "target_amplitude": 0.1
+}

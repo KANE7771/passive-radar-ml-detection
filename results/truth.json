@@ -1,0 +1,58 @@
+{
+    "seed": 42,
+    "tx_position_m": [
+        0.0,
+        0.0
+    ],
+    "rx_positions_m": {
+        "R1": [
+            1000.0,
+            0.0
+        ],
+        "R2": [
+            0.0,
+            1200.0
+        ],
+        "R3": [
+            -800.0,
+            400.0
+        ]
+    },
+    "target_position_m": [
+        600.0,
+        800.0
+    ],
+    "target_velocity_mps": [
+        60.0,
+        -20.0
+    ],
+    "receivers": {
+        "R1": {
+            "tx_to_target_m": 1000.0,
+            "target_to_rx_m": 894.4271909999159,
+            "tx_to_rx_m": 1000.0,
+            "bistatic_excess_range_m": 894.4271909999159,
+            "bistatic_delay_s": 2.9834879668651168e-06,
+            "delay_samples": 5.966975933730233,
+            "doppler_hz": 53.60002654735653
+        },
+        "R2": {
+            "tx_to_target_m": 1000.0,
+            "target_to_rx_m": 721.1102550927978,
+            "tx_to_rx_m": 1200.0,
+            "bistatic_excess_range_m": 521.1102550927978,
+            "bistatic_delay_s": 1.7382367073850732e-06,
+            "delay_samples": 3.4764734147701466,
+            "doppler_hz": -175.6584017537355
+        },
+        "R3": {
+            "tx_to_target_m": 1000.0,
+            "target_to_rx_m": 1456.0219778561036,
+            "tx_to_rx_m": 894.4271909999159,
+            "bistatic_excess_range_m": 1561.5947868561877,
+            "bistatic_delay_s": 5.208919521438353e-06,
+            "delay_samples": 10.417839042876707,
+            "doppler_hz": -156.5351563825071
+        }
+    }
+}

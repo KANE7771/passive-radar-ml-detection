@@ -1,5 +1,8 @@
 {
     "seed": 42,
+    "sampling_frequency_hz": 2000000,
+    "carrier_frequency_hz": 650000000.0,
+    "bandwidth_hz": 500000.0,
     "tx_position_m": [
         0.0,
         0.0

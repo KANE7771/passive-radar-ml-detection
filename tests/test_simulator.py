@@ -19,9 +19,9 @@ from src.simulator import (
 )
 
 
-# =========================================================
-# Test 1: Reproducibility
-# =========================================================
+# ============================================================
+# Test 1 - Reproducibility
+# ============================================================
 
 def test_reference_reproducibility():
 
@@ -32,6 +32,7 @@ def test_reference_reproducibility():
         SEED
     )
 
+
     signal_2 = generate_reference_signal(
         FS,
         DURATION,
@@ -40,40 +41,17 @@ def test_reference_reproducibility():
     )
 
 
-    are_identical = np.allclose(
+    assert np.allclose(
         signal_1,
         signal_2
     )
 
 
-    print(
-        "\nReproducibility Test"
-    )
-
-    print(
-        "Seed:",
-        SEED
-    )
-
-    print(
-        "Signals identical:",
-        are_identical
-    )
-
-
-    assert are_identical
-
-
-# =========================================================
-# Test 2: Geometry-derived delay
-# =========================================================
+# ============================================================
+# Test 2 - Range / Delay Consistency
+# ============================================================
 
 def test_geometry_delay_consistency():
-
-    print(
-        "\nGeometry-derived Delay Test"
-    )
-
 
     for (
         rx_name,
@@ -82,18 +60,27 @@ def test_geometry_delay_consistency():
 
 
         truth = calculate_bistatic_truth(
+
             TX_POSITION,
+
             rx_position,
+
             TARGET_INITIAL_POSITION,
+
             TARGET_VELOCITY,
+
             CARRIER_FREQUENCY,
+
             FS
         )
 
 
-        reconstructed_range = (
+        calculated_range = (
+
             C
+
             *
+
             truth[
                 "bistatic_delay_s"
             ]
@@ -102,40 +89,30 @@ def test_geometry_delay_consistency():
 
         print(
             rx_name,
-            "Range:",
-            round(
-                truth[
-                    "bistatic_excess_range_m"
-                ],
-                3
-            ),
-            "m"
-        )
-
-
-        assert (
             truth[
                 "bistatic_excess_range_m"
-            ]
-            >= 0
+            ],
+            calculated_range
         )
 
 
         assert np.isclose(
-            reconstructed_range,
+
+            calculated_range,
+
             truth[
                 "bistatic_excess_range_m"
             ]
         )
 
 
-# =========================================================
-# Test 3: Zero velocity → zero Doppler
-# =========================================================
+# ============================================================
+# Test 3 - Stationary Target = Zero Doppler
+# ============================================================
 
 def test_stationary_target_has_zero_doppler():
 
-    zero_velocity = (
+    stationary_velocity = (
         0.0,
         0.0
     )
@@ -146,18 +123,89 @@ def test_stationary_target_has_zero_doppler():
 
 
         truth = calculate_bistatic_truth(
+
             TX_POSITION,
+
             rx_position,
+
             TARGET_INITIAL_POSITION,
-            zero_velocity,
+
+            stationary_velocity,
+
             CARRIER_FREQUENCY,
+
             FS
         )
 
 
         assert np.isclose(
+
             truth[
                 "doppler_hz"
             ],
+
             0.0
+        )
+
+
+# ============================================================
+# Test 4 - Reverse Motion = Reverse Doppler
+# ============================================================
+
+def test_reverse_velocity_reverses_doppler():
+
+    reverse_velocity = tuple(
+
+        -value
+
+        for value
+        in TARGET_VELOCITY
+    )
+
+
+    for rx_position \
+        in RX_POSITIONS.values():
+
+
+        forward = calculate_bistatic_truth(
+
+            TX_POSITION,
+
+            rx_position,
+
+            TARGET_INITIAL_POSITION,
+
+            TARGET_VELOCITY,
+
+            CARRIER_FREQUENCY,
+
+            FS
+        )
+
+
+        reverse = calculate_bistatic_truth(
+
+            TX_POSITION,
+
+            rx_position,
+
+            TARGET_INITIAL_POSITION,
+
+            reverse_velocity,
+
+            CARRIER_FREQUENCY,
+
+            FS
+        )
+
+
+        assert np.isclose(
+
+            forward[
+                "doppler_hz"
+            ],
+
+            -reverse[
+                "doppler_hz"
+            ]
         )

@@ -20,9 +20,9 @@ from configs.baseline_config import (
 )
 
 
-# =========================================================
-# 1. Generate reference signal
-# =========================================================
+# ============================================================
+# 1. Generate Reference Signal
+# ============================================================
 
 def generate_reference_signal(
         fs,
@@ -30,12 +30,18 @@ def generate_reference_signal(
         bandwidth,
         seed):
 
+    """
+    Generate a reproducible band-limited
+    complex baseband reference signal.
+    """
+
     rng = np.random.default_rng(seed)
 
     n_samples = int(
         round(fs * duration)
     )
 
+    # Generate a random complex spectrum
     spectrum = (
         rng.normal(size=n_samples)
         +
@@ -47,14 +53,17 @@ def generate_reference_signal(
         d=1.0 / fs
     )
 
+    # Keep only frequencies inside selected bandwidth
     spectrum[
-        np.abs(frequencies) > bandwidth / 2.0
+        np.abs(frequencies) > bandwidth / 2
     ] = 0.0
 
+    # Convert to time domain
     reference = np.fft.ifft(
         spectrum
     )
 
+    # Normalise average power to 1
     power = np.mean(
         np.abs(reference) ** 2
     )
@@ -64,9 +73,11 @@ def generate_reference_signal(
     )
 
     return reference
-# =========================================================
-# 2. Calculate bistatic geometry
-# =========================================================
+
+
+# ============================================================
+# 2. Calculate Bistatic Geometry
+# ============================================================
 
 def calculate_bistatic_truth(
         tx_position,
@@ -97,25 +108,35 @@ def calculate_bistatic_truth(
     )
 
 
-    # Tx → Target
+    # Tx -> Target
     d_tx_target = np.linalg.norm(
         target - tx
     )
 
 
-    # Target → Rx
+    # Target -> Rx
     d_target_rx = np.linalg.norm(
         target - rx
     )
 
 
-    # Tx → Rx direct path
+    # Tx -> Rx direct path
     d_tx_rx = np.linalg.norm(
         rx - tx
     )
 
 
+    # --------------------------------------------------------
     # Bistatic excess range
+    #
+    # Rb =
+    # |Tx -> Target|
+    # +
+    # |Target -> Rx|
+    # -
+    # |Tx -> Rx|
+    # --------------------------------------------------------
+
     bistatic_excess_range = (
         d_tx_target
         +
@@ -125,51 +146,70 @@ def calculate_bistatic_truth(
     )
 
 
-    # Convert range difference to time delay
+    # --------------------------------------------------------
+    # Distance -> Time Delay
+    #
+    # tau = Rb / c
+    # --------------------------------------------------------
+
     bistatic_delay_seconds = (
-        bistatic_excess_range / C
+        bistatic_excess_range
+        /
+        C
     )
 
 
-    # Convert seconds to samples
+    # --------------------------------------------------------
+    # Seconds -> Samples
+    # --------------------------------------------------------
+
     delay_samples = (
-        bistatic_delay_seconds * fs
+        bistatic_delay_seconds
+        *
+        fs
     )
 
 
-    # =====================================================
+    # ========================================================
     # Doppler
-    # =====================================================
+    # ========================================================
 
     wavelength = (
-        C / carrier_frequency
+        C
+        /
+        carrier_frequency
     )
 
 
-    # Unit vector from Tx to Target
+    # Direction from Tx to Target
     u_tx = (
         target - tx
     ) / d_tx_target
 
 
-    # Unit vector from Rx to Target
+    # Direction from Rx to Target
     u_rx = (
         target - rx
     ) / d_target_rx
 
 
+    # Rate of change of the bistatic path
     total_path_rate = np.dot(
         u_tx + u_rx,
         velocity
     )
 
 
+    # Bistatic Doppler
     doppler_hz = (
-        -total_path_rate / wavelength
+        -total_path_rate
+        /
+        wavelength
     )
 
 
     return {
+
         "tx_to_target_m":
             float(d_tx_target),
 
@@ -191,13 +231,19 @@ def calculate_bistatic_truth(
         "doppler_hz":
             float(doppler_hz),
     }
-# =========================================================
-# 3. Apply fractional delay
-# =========================================================
+
+
+# ============================================================
+# 3. Fractional Delay
+# ============================================================
 
 def apply_fractional_delay(
         signal,
         delay_samples):
+
+    """
+    Delay signal by a non-integer number of samples.
+    """
 
     n = np.arange(
         len(signal),
@@ -227,17 +273,16 @@ def apply_fractional_delay(
     )
 
 
-    delayed_signal = (
+    return (
         delayed_real
         +
         1j * delayed_imag
     )
 
-    return delayed_signal
 
-# =========================================================
+# ============================================================
 # 4. Apply Doppler
-# =========================================================
+# ============================================================
 
 def apply_doppler(
         signal,
@@ -246,28 +291,36 @@ def apply_doppler(
 
     time = (
         np.arange(
-            len(signal),
-            dtype=float
+            len(signal)
         )
-        / fs
+        /
+        fs
     )
 
 
     phase_rotation = np.exp(
         1j
-        * 2.0
-        * np.pi
-        * doppler_hz
-        * time
+        *
+        2
+        *
+        np.pi
+        *
+        doppler_hz
+        *
+        time
     )
 
 
     return (
-        signal * phase_rotation
+        signal
+        *
+        phase_rotation
     )
-# =========================================================
-# 5. Generate one receiver channel
-# =========================================================
+
+
+# ============================================================
+# 5. Generate One Receiver Channel
+# ============================================================
 
 def generate_receiver_channels(
         reference,
@@ -275,58 +328,86 @@ def generate_receiver_channels(
         receiver_index):
 
 
+    # Calculate physical truth first
     truth = calculate_bistatic_truth(
+
         TX_POSITION,
+
         rx_position,
+
         TARGET_INITIAL_POSITION,
+
         TARGET_VELOCITY,
+
         CARRIER_FREQUENCY,
+
         FS
     )
 
 
     # Apply geometry-derived delay
     target_echo = apply_fractional_delay(
+
         reference,
-        truth["delay_samples"]
+
+        truth[
+            "delay_samples"
+        ]
     )
 
 
     # Apply geometry-derived Doppler
     target_echo = apply_doppler(
+
         target_echo,
-        truth["doppler_hz"],
+
+        truth[
+            "doppler_hz"
+        ],
+
         FS
     )
 
 
-    # Reproducible noise
+    # Generate reproducible receiver noise
     rng = np.random.default_rng(
-        SEED + 1000 + receiver_index
+        SEED
+        +
+        1000
+        +
+        receiver_index
     )
 
 
     noise = (
+
         rng.normal(
             scale=NOISE_STD,
             size=len(reference)
         )
+
         +
+
         1j * rng.normal(
             scale=NOISE_STD,
             size=len(reference)
         )
+
     )
 
 
+    # Simplified surveillance channel
     surveillance = (
+
         DIRECT_PATH_AMPLITUDE
-        * reference
+        *
+        reference
 
         +
 
         TARGET_AMPLITUDE
-        * target_echo
+        *
+        target_echo
 
         +
 
@@ -334,160 +415,91 @@ def generate_receiver_channels(
     )
 
 
-    return (
-        surveillance,
-        target_echo,
-        noise,
-        truth
-    )
-# =========================================================
-# 6. Run baseline simulation
-# =========================================================
+    return {
 
-if __name__ == "__main__":
+        "reference":
+            reference.copy(),
 
+        "surveillance":
+            surveillance,
+
+        "target_echo":
+            target_echo,
+
+        "noise":
+            noise,
+
+        "truth":
+            truth,
+    }
+
+
+# ============================================================
+# 6. Run Baseline Simulation
+# ============================================================
+
+def run_baseline_simulation():
 
     reference = generate_reference_signal(
+
         FS,
+
         DURATION,
+
         BANDWIDTH,
+
         SEED
     )
 
 
-    all_truth = {}
+    receiver_data = {}
 
 
-    print(
-        "=== Geometry-first Passive Radar Simulation ==="
-    )
-
-    print(
-        "Tx position:",
-        TX_POSITION
-    )
-
-    print(
-        "Target position:",
-        TARGET_INITIAL_POSITION
-    )
-
-    print(
-        "Target velocity:",
-        TARGET_VELOCITY
-    )
-
-    print()
-
-
-    for index, (
-        rx_name,
-        rx_position
+    for (
+        receiver_index,
+        (rx_name, rx_position)
     ) in enumerate(
         RX_POSITIONS.items()
     ):
 
 
-        surveillance, \
-        target_echo, \
-        noise, \
-        truth = generate_receiver_channels(
+        receiver_data[
+            rx_name
+        ] = generate_receiver_channels(
+
             reference,
+
             rx_position,
-            index
+
+            receiver_index
         )
 
 
-        all_truth[rx_name] = truth
-
-
-        print(
-            rx_name,
-            "position:",
-            rx_position
-        )
-
-
-        print(
-            "  Bistatic excess range:",
-            round(
-                truth[
-                    "bistatic_excess_range_m"
-                ],
-                3
-            ),
-            "m"
-        )
-
-
-        print(
-            "  Delay:",
-            round(
-                truth[
-                    "bistatic_delay_s"
-                ] * 1e6,
-                3
-            ),
-            "us"
-        )
-
-
-        print(
-            "  Delay samples:",
-            round(
-                truth[
-                    "delay_samples"
-                ],
-                3
-            )
-        )
-
-
-        print(
-            "  Doppler:",
-            round(
-                truth[
-                    "doppler_hz"
-                ],
-                3
-            ),
-            "Hz"
-        )
-
-
-        print()
-
-
-    project_root = (
-        Path(__file__)
-        .resolve()
-        .parents[1]
-    )
-
-
-    results_dir = (
-        project_root
-        / "results"
-    )
-
-
-    results_dir.mkdir(
-        exist_ok=True
-    )
-
+    # --------------------------------------------------------
+    # Save Ground Truth
+    # --------------------------------------------------------
 
     truth_record = {
+
         "seed":
             SEED,
 
+        "sampling_frequency_hz":
+            FS,
+
+        "carrier_frequency_hz":
+            CARRIER_FREQUENCY,
+
+        "bandwidth_hz":
+            BANDWIDTH,
+
         "tx_position_m":
-            list(
-                TX_POSITION
-            ),
+            list(TX_POSITION),
 
         "rx_positions_m": {
+
             name:
-            list(position)
+                list(position)
 
             for name, position
             in RX_POSITIONS.items()
@@ -503,13 +515,44 @@ if __name__ == "__main__":
                 TARGET_VELOCITY
             ),
 
-        "receivers":
-            all_truth
+        "receivers": {
+
+            name:
+                data["truth"]
+
+            for name, data
+            in receiver_data.items()
+        },
     }
 
 
-    with open(
-        results_dir / "truth.json",
+    project_root = (
+        Path(__file__)
+        .resolve()
+        .parents[1]
+    )
+
+
+    results_dir = (
+        project_root
+        /
+        "results"
+    )
+
+
+    results_dir.mkdir(
+        exist_ok=True
+    )
+
+
+    truth_path = (
+        results_dir
+        /
+        "truth.json"
+    )
+
+
+    with truth_path.open(
         "w",
         encoding="utf-8"
     ) as file:
@@ -519,4 +562,163 @@ if __name__ == "__main__":
             file,
             indent=4
         )
-python -m src.simulator
+
+
+    return (
+        receiver_data,
+        truth_record,
+        truth_path
+    )
+
+
+# ============================================================
+# Main
+# ============================================================
+
+if __name__ == "__main__":
+
+    (
+        receiver_data,
+        truth_record,
+        truth_path
+    ) = run_baseline_simulation()
+
+
+    print(
+        "=== Geometry-first Passive Radar Simulation ==="
+    )
+
+
+    print(
+        "Tx:",
+        TX_POSITION
+    )
+
+
+    print(
+        "Target:",
+        TARGET_INITIAL_POSITION
+    )
+
+
+    print(
+        "Velocity:",
+        TARGET_VELOCITY
+    )
+
+
+    print()
+
+
+    for (
+        rx_name,
+        rx_position
+    ) in RX_POSITIONS.items():
+
+
+        truth = (
+            truth_record[
+                "receivers"
+            ][
+                rx_name
+            ]
+        )
+
+
+        print(
+            f"{rx_name}: {rx_position}"
+        )
+
+
+        print(
+            "Tx -> Target:",
+            round(
+                truth[
+                    "tx_to_target_m"
+                ],
+                3
+            ),
+            "m"
+        )
+
+
+        print(
+            "Target -> Rx:",
+            round(
+                truth[
+                    "target_to_rx_m"
+                ],
+                3
+            ),
+            "m"
+        )
+
+
+        print(
+            "Tx -> Rx:",
+            round(
+                truth[
+                    "tx_to_rx_m"
+                ],
+                3
+            ),
+            "m"
+        )
+
+
+        print(
+            "Bistatic excess range:",
+            round(
+                truth[
+                    "bistatic_excess_range_m"
+                ],
+                3
+            ),
+            "m"
+        )
+
+
+        print(
+            "Delay:",
+            round(
+                truth[
+                    "bistatic_delay_s"
+                ]
+                *
+                1e6,
+                3
+            ),
+            "us"
+        )
+
+
+        print(
+            "Delay samples:",
+            round(
+                truth[
+                    "delay_samples"
+                ],
+                3
+            )
+        )
+
+
+        print(
+            "Doppler:",
+            round(
+                truth[
+                    "doppler_hz"
+                ],
+                3
+            ),
+            "Hz"
+        )
+
+
+        print()
+
+
+    print(
+        "Truth saved to:",
+        truth_path
+    )

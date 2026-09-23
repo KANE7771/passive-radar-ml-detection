@@ -519,5 +519,4 @@ if __name__ == "__main__":
             file,
             indent=4
         )
-        python - m
-        src.simulator
+python -m src.simulator

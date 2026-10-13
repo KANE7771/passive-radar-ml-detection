@@ -1,0 +1,26 @@
+{
+    "R1": {
+        "true_delay_samples": 5.966975933730233,
+        "estimated_delay_samples": 6.0,
+        "true_doppler_hz": 53.60002654735653,
+        "estimated_doppler_hz": 50.02125903508992,
+        "true_bistatic_excess_range_m": 894.4271909999159,
+        "estimated_bistatic_excess_range_m": 899.377374
+    },
+    "R2": {
+        "true_delay_samples": 3.4764734147701466,
+        "estimated_delay_samples": 3.0,
+        "true_doppler_hz": -175.6584017537355,
+        "estimated_doppler_hz": -200.08503614035968,
+        "true_bistatic_excess_range_m": 521.1102550927978,
+        "estimated_bistatic_excess_range_m": 449.688687
+    },
+    "R3": {
+        "true_delay_samples": 10.417839042876707,
+        "estimated_delay_samples": 10.0,
+        "true_doppler_hz": -156.5351563825071,
+        "estimated_doppler_hz": -150.06377710526976,
+        "true_bistatic_excess_range_m": 1561.5947868561877,
+        "estimated_bistatic_excess_range_m": 1498.9622900000002
+    }
+}
